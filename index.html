@@ -34,7 +34,7 @@
       padding: 32px 16px;        /* top + bottom breathing room */
       overflow-y: auto;
     }
-        
+
     .container {
       width: 100%;
       max-width: 720px;
@@ -68,6 +68,10 @@
       font-size:16px;
       font-weight:bold;
       cursor:pointer;
+    }
+
+    .calculate_button{
+      margin-top: 20px;
     }
 
     .result {
@@ -222,7 +226,7 @@
     <option value="1.5">6</option>
   </select>
 
-  <button type="button" onclick="calculate()">Calculate</button>
+  <button class="calculate_button" type="button" onclick="calculate()">Calculate</button>
 
   <div class="result" id="result" style="display:none;">
     <h2 id="finalValue"></h2>
