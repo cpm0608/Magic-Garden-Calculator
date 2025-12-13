@@ -5,44 +5,168 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Crop Sell Value Calculator</title>
   <style>
+    :root {
+      --bg: #0f172a;
+      --panel: #020617;
+      --field: #1e293b;
+      --text: #e5e7eb;
+      --muted: #94a3b8;
+      --border: #334155;
+    }
+
+    * { box-sizing: border-box; }
+
+    html, body {
+      height: 100%;
+    }
+
     body {
       font-family: Arial, sans-serif;
       background: #0f172a;
       color: #e5e7eb;
-      display: flex;
-      justify-content: center;
-      align-items: center;
-      height: 100vh;
       margin: 0;
+
+      display: flex;
+      justify-content: center;   /* horizontal center */
+      align-items: flex-start;   /* IMPORTANT: not center */
+
+      min-height: 100dvh;        /* dynamic viewport height */
+      padding: 32px 16px;        /* top + bottom breathing room */
+      overflow-y: auto;
     }
+        
     .container {
       width: 100%;
       max-width: 720px;
+      margin: auto;              /* centers when content is short */
       background: #020617;
       padding: 24px;
       border-radius: 16px;
       box-shadow: 0 20px 40px rgba(0,0,0,0.4);
     }
-    h1 { text-align: center; margin-bottom: 20px; }
+
+    h1 { text-align: center; margin: 0 0 20px; }
+
     label { display:block; margin-top:14px; font-weight:bold; }
+
     input, select {
-      width:100%; padding:10px; margin-top:6px;
-      border-radius:10px; border:none;
-      background:#1e293b; color:#e5e7eb;
+      width:100%;
+      padding:10px;
+      margin-top:6px;
+      border-radius:10px;
+      border:none;
+      background: var(--field);
+      color: var(--text);
     }
+
     button {
-      width:100%; margin-top:20px; padding:14px;
-      border:none; border-radius:12px;
+      width:100%;
+      padding:14px;
+      border:none;
+      border-radius:12px;
       background:linear-gradient(135deg,#f59e0b,#facc15);
-      font-size:16px; font-weight:bold; cursor:pointer;
+      font-size:16px;
+      font-weight:bold;
+      cursor:pointer;
     }
+
     .result {
-      margin-top:24px; background:#020617;
-      border:1px solid #334155; padding:16px;
-      border-radius:12px; text-align:center;
+      margin-top:24px;
+      background: var(--panel);
+      border:1px solid var(--border);
+      padding:16px;
+      border-radius:12px;
+      text-align:center;
     }
-    .result h2 { color:#22c55e; }
-    .hint { font-size:12px; color:#94a3b8; margin-top:4px; }
+
+    .result h2 { color:#22c55e; margin: 0 0 8px; }
+    .hint { font-size:12px; color: var(--muted); margin-top:4px; }
+
+    /* Items table wrapper (desktop scroll only if needed) */
+    .table-wrap {
+      overflow-x: auto;
+      border:1px solid var(--border);
+      border-radius:12px;
+      -webkit-overflow-scrolling: touch;
+    }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+    }
+
+    thead tr { background:#0b1220; }
+    th, td { padding:10px; border-bottom:1px solid var(--border); }
+    th { text-align:left; }
+    td.right, th.right { text-align:right; }
+    td.center, th.center { text-align:center; }
+
+    .list-actions {
+      display:flex;
+      gap:10px;
+      margin-top:12px;
+      flex-wrap:wrap;
+    }
+    .list-actions button { margin-top:0; }
+
+    .btn-add {
+      flex:1;
+      background:linear-gradient(135deg,#22c55e,#86efac);
+      color:#020617;
+    }
+    .btn-clear {
+      flex:1;
+      background:linear-gradient(135deg,#ef4444,#fca5a5);
+      color:#020617;
+    }
+
+    /* ---------- Mobile improvements ---------- */
+    @media (max-width: 720px) {
+      body { padding: 12px; }
+      .container { padding: 16px; border-radius: 14px; }
+
+      /* Turn table into mobile "cards" (no horizontal scroll needed) */
+      .table-wrap { overflow: visible; border: none; }
+      table { min-width: 0; }
+
+      thead { display: none; }
+
+      tbody tr {
+        display: block;
+        border: 1px solid var(--border);
+        border-radius: 12px;
+        margin-top: 10px;
+        overflow: hidden;
+        background: #071024;
+      }
+
+      tbody td {
+        display: flex;
+        justify-content: space-between;
+        gap: 12px;
+        border-bottom: 1px solid rgba(51,65,85,0.6);
+        padding: 10px 12px;
+        text-align: left !important;
+        white-space: normal;
+      }
+
+      tbody td::before {
+        content: attr(data-label);
+        color: var(--muted);
+        font-weight: 700;
+        flex: 0 0 auto;
+      }
+
+      tbody td:last-child { border-bottom: none; }
+
+      .list-actions {
+        flex-direction: column;
+      }
+      .list-actions button {
+        flex: unset;
+        width: 100%;
+      }
+    }
   </style>
 </head>
 <body>
@@ -54,7 +178,7 @@
   <div class="hint" id="cropInfo"></div>
 
   <label>Current Weight (kg)</label>
-  <input id="currentWeight" type="number" step="0.01" />
+  <input id="currentWeight" type="number" step="0.01" inputmode="decimal" />
 
   <label>Mutation</label>
   <select id="mutation">
@@ -98,11 +222,42 @@
     <option value="1.5">6</option>
   </select>
 
-  <button onclick="calculate()">Calculate</button>
+  <button type="button" onclick="calculate()">Calculate</button>
 
   <div class="result" id="result" style="display:none;">
     <h2 id="finalValue"></h2>
     <p id="breakdown"></p>
+  </div>
+
+  <div class="result" id="listWrap" style="margin-top:16px;">
+    <h2 style="color:#38bdf8; margin:0 0 12px;">Items</h2>
+
+    <div class="table-wrap">
+      <table>
+        <thead>
+          <tr>
+            <th>Crop</th>
+            <th class="right">Weight</th>
+            <th class="right">Size</th>
+            <th class="right">Cond</th>
+            <th class="right">Mut</th>
+            <th class="right">Friend</th>
+            <th class="right">Value</th>
+            <th class="center">Action</th>
+          </tr>
+        </thead>
+        <tbody id="itemsTbody"></tbody>
+      </table>
+    </div>
+
+    <div class="list-actions">
+      <button type="button" class="btn-add" onclick="addToList()">Add Current to List</button>
+      <button type="button" class="btn-clear" onclick="clearList()">Clear All</button>
+    </div>
+
+    <div style="margin-top:14px; font-weight:bold; text-align:center;">
+      Grand Total: <span id="grandTotal">0</span>
+    </div>
   </div>
 </div>
 
@@ -145,22 +300,30 @@ const crops = {
   Moonbinder: { price: 11000000, baseWeight: 2, maxSize: 2 }
 };
 
-function loadCrop() {
-  const crop = crops[cropSelect.value];
-  document.getElementById('cropInfo').innerText =
-    `Base Price: ${crop.price.toLocaleString()} | Base Weight: ${crop.baseWeight}kg | Max Size ×${crop.maxSize}`;
-}
-
 const cropSelect = document.getElementById('crop');
 Object.keys(crops).forEach(c => {
   const opt = document.createElement('option');
   opt.value = c; opt.textContent = c;
   cropSelect.appendChild(opt);
 });
+
+function loadCrop() {
+  const crop = crops[cropSelect.value];
+  document.getElementById('cropInfo').innerText =
+    `Base Price: ${crop.price.toLocaleString()} | Base Weight: ${crop.baseWeight}kg | Max Size ×${crop.maxSize}`;
+}
 loadCrop();
 
-function calculate() {
-  const crop = crops[cropSelect.value];
+const items = [];
+
+function formatCoins(n) {
+  return Math.floor(n).toLocaleString();
+}
+
+function getCurrentCalc() {
+  const cropKey = cropSelect.value;
+  const crop = crops[cropKey];
+
   const currentWeight = Number(document.getElementById('currentWeight').value);
   const mutation = Number(document.getElementById('mutation').value);
   const condition = Number(document.getElementById('condition').value);
@@ -173,13 +336,82 @@ function calculate() {
   const conditionMultiplier = combo ? Number(combo) : condition;
   const totalMultiplier = conditionMultiplier * mutation;
 
-  const final = crop.price * size * totalMultiplier * players;
+  const finalRaw = crop.price * size * totalMultiplier * players;
+
+  return {
+    cropKey,
+    weight: currentWeight,
+    size,
+    conditionMultiplier,
+    mutation,
+    players,
+    finalRaw
+  };
+}
+
+function renderList() {
+  const tbody = document.getElementById('itemsTbody');
+  tbody.innerHTML = '';
+
+  let total = 0;
+
+  items.forEach((it, idx) => {
+    const lineCoins = Math.floor(it.finalRaw);
+    total += lineCoins;
+
+    const tr = document.createElement('tr');
+    tr.innerHTML = `
+      <td data-label="Crop">${it.cropKey}</td>
+      <td class="right" data-label="Weight">${it.weight.toLocaleString()} kg</td>
+      <td class="right" data-label="Size">×${it.size.toFixed(4)}</td>
+      <td class="right" data-label="Cond">×${it.conditionMultiplier}</td>
+      <td class="right" data-label="Mut">×${it.mutation}</td>
+      <td class="right" data-label="Friend">×${it.players}</td>
+      <td class="right" data-label="Value">${formatCoins(it.finalRaw)}</td>
+      <td class="center" data-label="Action">
+        <button type="button"
+          onclick="removeItem(${idx})"
+          style="padding:8px 10px; border-radius:10px; border:none; background:#334155; color:#e5e7eb; cursor:pointer; width:100%;">
+          Remove
+        </button>
+      </td>
+    `;
+    tbody.appendChild(tr);
+  });
+
+  document.getElementById('grandTotal').innerText = total.toLocaleString();
+}
+
+function addToList() {
+  const calc = getCurrentCalc();
+
+  if (!isFinite(calc.weight) || calc.weight <= 0) {
+    alert('Please enter a valid weight.');
+    return;
+  }
+
+  items.push(calc);
+  renderList();
+}
+
+function removeItem(index) {
+  items.splice(index, 1);
+  renderList();
+}
+
+function clearList() {
+  items.length = 0;
+  renderList();
+}
+
+function calculate() {
+  const calc = getCurrentCalc();
 
   document.getElementById('finalValue').innerText =
-    `Final Value: ${final.toLocaleString()}`;
+    `Final Value: ${formatCoins(calc.finalRaw)}`;
 
   document.getElementById('breakdown').innerText =
-    `Size ×${size.toFixed(2)} | Condition ×${conditionMultiplier} | Mutation ×${mutation} | Friend ×${players}`;
+    `Size ×${calc.size.toFixed(6)} | Condition ×${calc.conditionMultiplier} | Mutation ×${calc.mutation} | Friend ×${calc.players}`;
 
   document.getElementById('result').style.display = 'block';
 }
