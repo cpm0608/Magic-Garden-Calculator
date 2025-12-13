@@ -1,0 +1,188 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Crop Sell Value Calculator</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      background: #0f172a;
+      color: #e5e7eb;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      height: 100vh;
+      margin: 0;
+    }
+    .container {
+      width: 100%;
+      max-width: 720px;
+      background: #020617;
+      padding: 24px;
+      border-radius: 16px;
+      box-shadow: 0 20px 40px rgba(0,0,0,0.4);
+    }
+    h1 { text-align: center; margin-bottom: 20px; }
+    label { display:block; margin-top:14px; font-weight:bold; }
+    input, select {
+      width:100%; padding:10px; margin-top:6px;
+      border-radius:10px; border:none;
+      background:#1e293b; color:#e5e7eb;
+    }
+    button {
+      width:100%; margin-top:20px; padding:14px;
+      border:none; border-radius:12px;
+      background:linear-gradient(135deg,#f59e0b,#facc15);
+      font-size:16px; font-weight:bold; cursor:pointer;
+    }
+    .result {
+      margin-top:24px; background:#020617;
+      border:1px solid #334155; padding:16px;
+      border-radius:12px; text-align:center;
+    }
+    .result h2 { color:#22c55e; }
+    .hint { font-size:12px; color:#94a3b8; margin-top:4px; }
+  </style>
+</head>
+<body>
+<div class="container">
+  <h1>🌾 Crop Sell Calculator</h1>
+
+  <label>Select Crop</label>
+  <select id="crop" onchange="loadCrop()"></select>
+  <div class="hint" id="cropInfo"></div>
+
+  <label>Current Weight (kg)</label>
+  <input id="currentWeight" type="number" step="0.01" />
+
+  <label>Mutation</label>
+  <select id="mutation">
+    <option value="1">None</option>
+    <option value="25">Golden</option>
+    <option value="50">Rainbow</option>
+  </select>
+
+  <label>Condition</label>
+  <select id="condition">
+    <option value="1">None</option>
+    <option value="2">Dawnlit</option>
+    <option value="3">Dawnbound</option>
+    <option value="5">Amberlit</option>
+    <option value="6">Amberbound</option>
+    <option value="2">Wet</option>
+    <option value="2">Chilled</option>
+    <option value="10">Frozen</option>
+  </select>
+
+  <label>Combo Override (auto beats normal condition)</label>
+  <select id="combo">
+    <option value="">None</option>
+    <option value="3">Wet + Dawnlit</option>
+    <option value="4">Wet + Dawnbound</option>
+    <option value="6">Wet + Amberlit</option>
+    <option value="7">Wet + Amberbound</option>
+    <option value="11">Frozen + Dawnlit</option>
+    <option value="12">Frozen + Dawnbound</option>
+    <option value="14">Frozen + Amberlit</option>
+    <option value="15">Frozen + Amberbound</option>
+  </select>
+
+  <label>Players on Server</label>
+  <select id="players">
+    <option value="1">1</option>
+    <option value="1.1">2</option>
+    <option value="1.2">3</option>
+    <option value="1.3">4</option>
+    <option value="1.4">5</option>
+    <option value="1.5">6</option>
+  </select>
+
+  <button onclick="calculate()">Calculate</button>
+
+  <div class="result" id="result" style="display:none;">
+    <h2 id="finalValue"></h2>
+    <p id="breakdown"></p>
+  </div>
+</div>
+
+<script>
+const crops = {
+  Carrot: { price: 20, baseWeight: 0.1, maxSize: 3 },
+  Strawberry: { price: 14, baseWeight: 0.05, maxSize: 2 },
+  Aloe: { price: 310, baseWeight: 1.5, maxSize: 2.5 },
+  Delphinium: { price: 530, baseWeight: 0.02, maxSize: 3 },
+  FavaBean: { price: 25, baseWeight: 0.03, maxSize: 3 },
+  Blueberry: { price: 23, baseWeight: 0.01, maxSize: 2 },
+  Apple: { price: 73, baseWeight: 0.18, maxSize: 2 },
+  Tulip: { price: 767, baseWeight: 0.01, maxSize: 3 },
+  Tomato: { price: 27, baseWeight: 0.3, maxSize: 2 },
+  Daffodil: { price: 1090, baseWeight: 0.01, maxSize: 3 },
+  Corn: { price: 36, baseWeight: 1.2, maxSize: 2 },
+  Watermelon: { price: 2708, baseWeight: 4.5, maxSize: 3 },
+  Pumpkin: { price: 3700, baseWeight: 6, maxSize: 3 },
+  Echeveria: { price: 5520, baseWeight: 0.8, maxSize: 2.75 },
+  Coconut: { price: 302, baseWeight: 5, maxSize: 3 },
+  Banana: { price: 1750, baseWeight: 0.12, maxSize: 1.7 },
+  Lily: { price: 20123, baseWeight: 0.02, maxSize: 2.75 },
+  Camellia: { price: 4875, baseWeight: 0.3, maxSize: 3 },
+  Squash: { price: 3500, baseWeight: 0.3, maxSize: 3 },
+  BurrosTail: { price: 6000, baseWeight: 0.4, maxSize: 2.5 },
+  Mushroom: { price: 160000, baseWeight: 25, maxSize: 3.5 },
+  Cactus: { price: 261000, baseWeight: 1500, maxSize: 1.8 },
+  Bamboo: { price: 500, baseWeight: 1, maxSize: 2 },
+  Chrysanthemum: { price: 18000, baseWeight: 0.01, maxSize: 2.75 },
+  Grape: { price: 12500, baseWeight: 3, maxSize: 2 },
+  Pepper: { price: 7220, baseWeight: 0.5, maxSize: 2 },
+  Lemon: { price: 10000, baseWeight: 0.5, maxSize: 3 },
+  PassionFruit: { price: 24500, baseWeight: 9.5, maxSize: 2 },
+  DragonFruit: { price: 24500, baseWeight: 8.4, maxSize: 2 },
+  Cacao: { price: 35000, baseWeight: 0.5, maxSize: 2.5 },
+  Lychee: { price: 50000, baseWeight: 9, maxSize: 2 },
+  Sunflower: { price: 750000, baseWeight: 10, maxSize: 2.5 },
+  Starweaver: { price: 10000000, baseWeight: 10, maxSize: 2 },
+  Dawnbinder: { price: 11000000, baseWeight: 6, maxSize: 2.5 },
+  Moonbinder: { price: 11000000, baseWeight: 2, maxSize: 2 }
+};
+
+function loadCrop() {
+  const crop = crops[cropSelect.value];
+  document.getElementById('cropInfo').innerText =
+    `Base Price: ${crop.price.toLocaleString()} | Base Weight: ${crop.baseWeight}kg | Max Size ×${crop.maxSize}`;
+}
+
+const cropSelect = document.getElementById('crop');
+Object.keys(crops).forEach(c => {
+  const opt = document.createElement('option');
+  opt.value = c; opt.textContent = c;
+  cropSelect.appendChild(opt);
+});
+loadCrop();
+
+function calculate() {
+  const crop = crops[cropSelect.value];
+  const currentWeight = Number(document.getElementById('currentWeight').value);
+  const mutation = Number(document.getElementById('mutation').value);
+  const condition = Number(document.getElementById('condition').value);
+  const combo = document.getElementById('combo').value;
+  const players = Number(document.getElementById('players').value);
+
+  let size = currentWeight / crop.baseWeight;
+  size = Math.min(size, crop.maxSize);
+
+  const conditionMultiplier = combo ? Number(combo) : condition;
+  const totalMultiplier = conditionMultiplier * mutation;
+
+  const final = crop.price * size * totalMultiplier * players;
+
+  document.getElementById('finalValue').innerText =
+    `Final Value: ${final.toLocaleString()}`;
+
+  document.getElementById('breakdown').innerText =
+    `Size ×${size.toFixed(2)} | Condition ×${conditionMultiplier} | Mutation ×${mutation} | Friend ×${players}`;
+
+  document.getElementById('result').style.display = 'block';
+}
+</script>
+</body>
+</html>
